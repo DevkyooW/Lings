@@ -1,0 +1,7 @@
+.nativeDialogOpen {
+  cursor: wait;
+}
+
+.nativeDialogOpen .window {
+  pointer-events: none;
+}
