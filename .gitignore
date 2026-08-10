@@ -216,3 +216,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Lings / Tauri
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+src/assets/fonts/.download/
+src/assets/fonts/oppo/
+*.log
+.DS_Store
+Thumbs.db
