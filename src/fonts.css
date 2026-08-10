@@ -1,0 +1,24 @@
+@font-face {
+  font-family: "Lings Terminal";
+  src: url("./assets/fonts/cascadia/CascadiaCode-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 200 500;
+  font-display: block;
+}
+@font-face {
+  font-family: "Lings Terminal";
+  src: url("./assets/fonts/cascadia/CascadiaCode-SemiBold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 501 800;
+  font-display: block;
+}
+@font-face {
+  font-family: "Lings Sans";
+  src: url("../OPPO Sans 4.0.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: block;
+}
+:root {
+  font-family: "Lings Terminal", "Lings Sans", monospace;
+}
