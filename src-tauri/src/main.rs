@@ -1,1 +1,3 @@
-fn main() { lings_lib::run() }
+fn main() {
+    lings_lib::run()
+}
