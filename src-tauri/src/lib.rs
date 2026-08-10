@@ -8,7 +8,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 use std::{
     collections::HashMap,
-    fs,
+    fs::{self, OpenOptions},
     io::Write,
     path::{Path, PathBuf},
     sync::{
@@ -766,41 +766,139 @@ fn list_audio(view: String, db: State<Db>) -> Result<Vec<AudioItem>, String> {
         .collect())
 }
 
+#[derive(Serialize)]
+struct CopyResult {
+    success: usize,
+    failed: usize,
+    duplicates: usize,
+    io_errors: usize,
+    other_errors: usize,
+    log_path: String,
+}
+
 #[tauri::command]
-fn copy_files(ids: Vec<i64>, destination: String, db: State<Db>) -> Result<usize, String> {
+fn copy_files(ids: Vec<i64>, destination: String, db: State<Db>) -> Result<CopyResult, String> {
     let dest = PathBuf::from(destination);
-    fs::create_dir_all(&dest).map_err(|e| e.to_string())?;
-    let c = db.0.lock();
-    let mut n = 0;
-    for id in ids {
-        let p: Option<String> = c
-            .query_row("SELECT path FROM audio WHERE id=?1", [id], |r| r.get(0))
-            .optional()
-            .map_err(|e| e.to_string())?;
-        if let Some(p) = p {
-            let src = PathBuf::from(p);
-            if let Some(name) = src.file_name() {
-                let mut target = dest.join(name);
-                if target.exists() {
-                    let stem = target.file_stem().unwrap_or_default().to_string_lossy();
-                    let ext = target
-                        .extension()
-                        .map(|x| format!(".{}", x.to_string_lossy()))
-                        .unwrap_or_default();
-                    for i in 2..10000 {
-                        let v = dest.join(format!("{} ({}){}", stem, i, ext));
-                        if !v.exists() {
-                            target = v;
-                            break;
-                        }
-                    }
-                }
-                fs::copy(src, target).map_err(|e| e.to_string())?;
-                n += 1
+    let sources: Vec<(i64, Option<String>)> = {
+        let c = db.0.lock();
+        ids.iter()
+            .map(|id| {
+                let path = c
+                    .query_row("SELECT path FROM audio WHERE id=?1", [id], |r| r.get(0))
+                    .optional()
+                    .ok()
+                    .flatten();
+                (*id, path)
+            })
+            .collect()
+    };
+    let mut result = CopyResult {
+        success: 0,
+        failed: 0,
+        duplicates: 0,
+        io_errors: 0,
+        other_errors: 0,
+        log_path: String::new(),
+    };
+    let mut lines = vec![format!("Lings copy log\nDestination: {}\n", dest.display())];
+    let dest_error = fs::create_dir_all(&dest).err();
+    for (id, path) in sources {
+        let Some(path) = path else {
+            result.failed += 1;
+            result.other_errors += 1;
+            lines.push(format!(
+                "[OTHER ERROR] record #{id}: source record not found"
+            ));
+            continue;
+        };
+        let src = PathBuf::from(&path);
+        let Some(name) = src.file_name() else {
+            result.failed += 1;
+            result.other_errors += 1;
+            lines.push(format!("[OTHER ERROR] {path}: invalid file name"));
+            continue;
+        };
+        let target = dest.join(name);
+        if let Some(error) = &dest_error {
+            result.failed += 1;
+            result.io_errors += 1;
+            lines.push(format!("[I/O ERROR] {}: {error}", target.display()));
+            continue;
+        }
+        let mut input = match fs::File::open(&src) {
+            Ok(file) => file,
+            Err(error) => {
+                result.failed += 1;
+                result.io_errors += 1;
+                lines.push(format!("[I/O ERROR] {path}: {error}"));
+                continue;
+            }
+        };
+        let mut output = match OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&target)
+        {
+            Ok(file) => file,
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                result.failed += 1;
+                result.duplicates += 1;
+                lines.push(format!("[DUPLICATE] {}", target.display()));
+                continue;
+            }
+            Err(error) => {
+                result.failed += 1;
+                result.io_errors += 1;
+                lines.push(format!("[I/O ERROR] {}: {error}", target.display()));
+                continue;
+            }
+        };
+        match std::io::copy(&mut input, &mut output) {
+            Ok(_) => {
+                result.success += 1;
+                lines.push(format!("[OK] {path} -> {}", target.display()));
+            }
+            Err(error) => {
+                result.failed += 1;
+                result.io_errors += 1;
+                drop(output);
+                let _ = fs::remove_file(&target);
+                lines.push(format!(
+                    "[I/O ERROR] {path} -> {}: {error}",
+                    target.display()
+                ));
             }
         }
     }
-    Ok(n)
+    let log_path = std::env::temp_dir().join(format!(
+        "lings-copy-{}-{}.log",
+        std::process::id(),
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos()
+    ));
+    fs::write(&log_path, lines.join("\n")).map_err(|e| e.to_string())?;
+    result.log_path = log_path.to_string_lossy().into_owned();
+    Ok(result)
+}
+
+#[tauri::command]
+fn take_copy_log(path: String) -> Result<String, String> {
+    let path = PathBuf::from(path);
+    let temp = std::env::temp_dir();
+    let valid_parent = path.parent() == Some(temp.as_path());
+    let valid_name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .map(|name| name.starts_with("lings-copy-") && name.ends_with(".log"))
+        .unwrap_or(false);
+    if !valid_parent || !valid_name {
+        return Err("Invalid copy log path".into());
+    }
+    let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    fs::remove_file(path).map_err(|e| e.to_string())?;
+    Ok(content)
 }
 #[tauri::command]
 fn reveal_file(id: i64, db: State<Db>) -> Result<(), String> {
@@ -920,6 +1018,7 @@ pub fn run() {
             list_libraries,
             list_audio,
             copy_files,
+            take_copy_log,
             reveal_file,
             set_playlist,
             remove_from_index,
