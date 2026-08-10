@@ -1,0 +1,17 @@
+.dangerRow {
+  margin: 8px -8px -8px;
+  padding-inline: 12px;
+  background: #f3ded7;
+  border: 1px solid #c58a78;
+}
+
+.dangerRow b {
+  color: #8f2f24 !important;
+}
+
+.settingRow.dangerRow > button {
+  background: #8f3026;
+  color: #fff4e8;
+  border-color: #592019;
+  box-shadow: 2px 2px 0 #d08c6e;
+}

@@ -627,6 +627,20 @@ fn remove_library(id: i64, db: State<Db>) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn clear_scan_results(db: State<Db>, scan: State<ScanManager>) -> Result<(), String> {
+    if scan.status.lock().running {
+        return Err("Cannot clear scan results while a scan is running".into());
+    }
+    let mut c = db.0.lock();
+    let tx = c.transaction().map_err(|e| e.to_string())?;
+    tx.execute("DELETE FROM audio", [])
+        .map_err(|e| e.to_string())?;
+    tx.execute("DELETE FROM libraries", [])
+        .map_err(|e| e.to_string())?;
+    tx.commit().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn export_database(destination: String, db: State<Db>) -> Result<(), String> {
     let c = db.0.lock();
     c.execute_batch("PRAGMA wal_checkpoint(FULL)")
@@ -910,6 +924,7 @@ pub fn run() {
             set_playlist,
             remove_from_index,
             remove_library,
+            clear_scan_results,
             export_database,
             update_metadata
         ])
