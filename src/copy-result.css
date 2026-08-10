@@ -1,0 +1,67 @@
+#copyResultDialog {
+  width: min(620px, 90vw);
+}
+
+.copySummary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 20px;
+}
+
+.copySummary > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 13px 16px;
+  background: #dce3da;
+  border: 1px solid #829487;
+}
+
+.copySummary .failed {
+  background: #f1ddd6;
+  border-color: #bd8776;
+}
+
+.copySummary strong {
+  font-size: 25px;
+}
+
+.copySummary span,
+.copyReasons {
+  font-size: 11px;
+}
+
+.copyReasons {
+  margin: 0 20px 16px;
+  color: #655b4e;
+}
+
+.copyLogPane {
+  max-height: 290px;
+  overflow: auto;
+  margin: 0 20px 16px;
+  border: 2px inset #a9967e;
+  background: #faf5ec;
+}
+
+.copyLogPane[hidden] {
+  display: none;
+}
+
+.copyLogPane pre {
+  margin: 0;
+  padding: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #4c463e;
+  font: 10px/1.55 "Lings Terminal", "Lings Sans", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  .copySummary > div { background: #344039; border-color: #667d70; }
+  .copySummary .failed { background: #4b2d29; border-color: #98594c; }
+  .copyReasons { color: #c6b9a8; }
+  .copyLogPane { background: #1d201d; border-color: #665a4b; }
+  .copyLogPane pre { color: #cfc5b7; }
+}

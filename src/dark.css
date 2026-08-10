@@ -1,0 +1,71 @@
+#settingsBtn {
+  min-width: 42px;
+  font-size: 20px;
+  line-height: 1;
+  padding: 7px 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --paper: #24251f;
+    --paper2: #302d26;
+    --caramel: #a9703f;
+    --brown: #9a7654;
+    --ink: #eee5d8;
+    --muted: #b9aa98;
+    --line: #655b4d;
+    --signal: #d56b4d;
+    color: var(--ink);
+    background: #171c19;
+  }
+
+  body { background: #171c19; }
+  .window { background: var(--paper); box-shadow: inset 0 0 0 3px #72502f, 8px 8px 0 #111411; }
+  aside { background-color: #292821; background-image: linear-gradient(#d0b8940b 1px,transparent 1px),linear-gradient(90deg,#d0b8940b 1px,transparent 1px); }
+  .brand { color: #f2e8d9; text-shadow: 1px 1px #111; }
+  .brandmark { color: #eee5d7; background: #302e27; }
+  .nav,.lib,.add { color: #c2b7a8; }
+  .nav:hover,.nav.active,.lib:hover { color: #fff6e8; background: #39372f; }
+  .sideTitle,.sideTitle button,.work small { color: #c99c6e; }
+  .lib small { color: #8f8578; }
+  .add { color: #d6ae82; background: #312d26; }
+  .work div { color: #ded4c7; background: #1c201e; border-color: #554b3e; }
+  main { background-color: var(--paper); background-image: linear-gradient(#d4b7850a 1px,transparent 1px),linear-gradient(90deg,#d4b7850a 1px,transparent 1px); }
+  header { background: #302d26; }
+  .search { background: #191c1a; border-color: #756856; color: #aaa092; box-shadow: inset 2px 2px 0 #0e100f; }
+  .search input,.search input::placeholder { color: #e8dfd2; }
+  header button,.dialogActions button,.settingRow>button { background: #37342d; border-color: #8a7965; color: #eee4d7; box-shadow: 3px 3px 0 #704b2e; }
+  .status { color: #c0b5a6; background: #302e28; }
+  .viewtabs .active { background: #403b32; color: #ed9272; }
+  .tableWrap { background: #22231e; }
+  th { background: #39352d; color: #d5c8b7; text-shadow: 1px 1px #111; }
+  td { border-color: #484238; color: #c8bfb2; }
+  tbody tr:nth-child(even) td { background: #292923; }
+  tr:hover td { background: #37342c!important; }
+  tr.selected td { background: #34443c!important; color: #f1eadf; }
+  .file b,.now b { color: #eee6da; }
+  .file small,.now span,footer>span { color: #998f82; }
+  footer { background: #302d26; box-shadow: inset 0 2px #454036; }
+  .menu,dialog { background: #302d27; color: #eee5d8; border-color: #9b8065; }
+  .menu button { color: #e8ded0; }
+  .menu button:hover { background: #414139; }
+  .dialogHead,.aboutHero { background: #3c352c; }
+  .dialogHead h2,.aboutHero h1 { color: #f3e9db; text-shadow: 2px 2px #171512; }
+  .dialogHead button,.aboutHero>button { color: #d6c8b7; }
+  .fileHero small,.grid label,form>label,.aboutSummary { color: #b8aa98; }
+  textarea,input { background: #191c1a; border-color: #665a4b; color: #eee6db; }
+  .dialogActions,.aboutLinks { background: #373229; }
+  .ucsBadge,.fontNotice { background: #344039; color: #c8dccf; }
+  .licensePane { background: #1d201d; border-color: #665a4b; }
+  .licensePane h4 { background: #3a352d; color: #eadfce; }
+  .licensePane pre { color: #cfc5b7; }
+  .scanPanel { background: #343128; color: #eee5d8; }
+  .scanTop span,.scanPanel small,.settingRow small { color: #b7aa99; }
+  .settingRow b { color: #e9dfd2; }
+  .dangerRow { background: #4b2d29; border-color: #98594c; }
+  .dangerRow b { color: #ffad99!important; }
+  ::-webkit-scrollbar-track { background: #302d27; border-color: #5b5145; }
+  ::-webkit-scrollbar-thumb { background: #736b61; border-color: #302d27; }
+  ::-webkit-scrollbar-corner { background: #302d27; }
+}
