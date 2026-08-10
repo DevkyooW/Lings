@@ -38,10 +38,22 @@ const UCS_COLUMNS:&[(&str,&str)]=&[
 
 fn now()->i64{SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs() as i64}
 fn text_path(p:&Path)->String{p.to_string_lossy().into_owned()}
-fn db_path(app:&AppHandle)->PathBuf{app.path().app_data_dir().unwrap_or_else(|_|PathBuf::from(".")).join("lings.db")}
+fn is_installed_dir(dir:&Path)->bool{
+    if dir.join("uninstall.exe").exists(){return true}
+    let normalized=dir.to_string_lossy().replace('\\',"/").to_ascii_lowercase();
+    if normalized.contains("/program files/")||normalized.contains("/program files (x86)/")||normalized.contains("/applications/lings.app/"){return true}
+    if let Ok(local)=std::env::var("LOCALAPPDATA"){let local=local.replace('\\',"/").to_ascii_lowercase();if normalized.starts_with(&local)&&dir.file_name().map(|x|x.to_string_lossy().eq_ignore_ascii_case("lings")).unwrap_or(false){return true}}
+    false
+}
+fn db_path(_app:&AppHandle)->PathBuf{
+    let exe=std::env::current_exe().ok();let dir=exe.as_deref().and_then(Path::parent).map(Path::to_path_buf).unwrap_or_else(||PathBuf::from("."));
+    let folder=if is_installed_dir(&dir){"database"}else{"Lings_db"};dir.join(folder).join("lings.db")
+}
+fn legacy_db_path(app:&AppHandle)->Option<PathBuf>{app.path().app_data_dir().ok().map(|p|p.join("lings.db"))}
 
 fn init_db(app:&AppHandle)->Result<Connection,String>{
-    let path=db_path(app); if let Some(p)=path.parent(){fs::create_dir_all(p).map_err(|e|e.to_string())?}
+    let path=db_path(app); if let Some(p)=path.parent(){fs::create_dir_all(p).map_err(|e|format!("Cannot create database folder {}: {e}",p.display()))?}
+    if !path.exists(){if let Some(old)=legacy_db_path(app){if old.exists()&&old!=path{fs::copy(old,&path).map_err(|e|format!("Cannot migrate existing database to {}: {e}",path.display()))?;}}}
     let c=Connection::open(path).map_err(|e|e.to_string())?;
     c.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
       CREATE TABLE IF NOT EXISTS libraries(id INTEGER PRIMARY KEY,path TEXT NOT NULL UNIQUE,name TEXT NOT NULL,added_at INTEGER NOT NULL);
@@ -148,4 +160,6 @@ mod tests{
     }
     #[test]
     fn preserves_other_ixml_fields(){let old="<BWFXML><PROJECT>Game</PROJECT><ASWG><cat_id>OLD</cat_id></ASWG></BWFXML>".to_string();let out=merge_ixml(Some(old),&UcsMeta{cat_id:"NEW".into(),..Default::default()});assert!(out.contains("<PROJECT>Game</PROJECT>"));assert_eq!(xml_value(&out,"cat_id"),"NEW")}
+    #[test]
+    fn detects_standard_install_locations(){assert!(is_installed_dir(Path::new("C:/Program Files/Lings")));assert!(is_installed_dir(Path::new("/Applications/Lings.app/Contents/MacOS")));assert!(!is_installed_dir(Path::new("D:/Portable/Lings")))}
 }
